@@ -3,6 +3,8 @@
 This document lists security issues that are **already known** to the FT team.
 Issues described here are considered **out of scope**.
 
+**Note:**: some issues may be reported and in triage process but not yet listed, those are also considered duplicate and out of scope.
+
 Submission, eligibility, and reward rules are governed by the FT bug bounty program on
 Sherlock — see [`README.md`](./README.md). This list only documents what is already
 known; how it affects a given submission is determined by the rules on the bounty
