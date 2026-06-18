@@ -3,8 +3,6 @@
 Public security information for the **FT** protocol and its supporting systems
 (PutManager, strategy management, AaveStrategy, YieldClaimer, and pFTMarketplace).
 
-This repository is the canonical, public source of truth for the FT bug bounty program.
-
 ## Contents
 
 - **[`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md)** — issues already known to the FT team,
