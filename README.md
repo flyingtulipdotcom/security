@@ -1,7 +1,6 @@
 # FT Security
 
 Public security information for the **FT** protocol and its supporting systems
-(PutManager, strategy management, AaveStrategy, YieldClaimer, and pFTMarketplace).
 
 ## Contents
 
@@ -33,14 +32,6 @@ issues or pull requests for vulnerabilities.
 is published here: https://docs.flyingtulip.com/contract-addresses/. The table below is
 an overview of the systems; for the authoritative bounty scope refer to the
 [Sherlock bounty program](https://audits.sherlock.xyz/bug-bounties/248).
-
-| System | Description |
-| --- | --- |
-| PutManager | Core Put issuance, collateral conversion, investing, divest/withdraw |
-| Strategy Management & Roles | Strategy registration/removal, role rotation, caps, timelocks |
-| AaveStrategy | Aave-backed yield strategy |
-| YieldClaimer | Yield claiming and fund recovery |
-| pFTMarketplace | Listings and EIP-712 buy/sell offers for Put positions |
 
 ## Disclaimer
 
