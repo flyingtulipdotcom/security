@@ -15,7 +15,7 @@ platform.
 > - **Mitigated** — partially addressed in code and/or by operational controls; residual risk accepted.
 > - **By design** — intended behavior given current architecture / deployment model.
 
-**Last updated:** 2026-06-18
+**Last updated:** 2026-06-19
 
 ---
 
@@ -34,6 +34,8 @@ platform.
   - [AAVE-01 — `availableToWithdraw` does not check pool reserves](#aave-01--availabletowithdraw-does-not-check-pool-reserves)
 - [YieldClaimer](#yieldclaimer)
   - [YC-01 — Yield claimer must be responsive to recover funds](#yc-01--yield-claimer-must-be-responsive-to-recover-funds)
+- [LeverageRfqEngine](#leveragerfqengine)
+  - [LEV-01 — Cancel and fill session calls share the order hash by design](#lev-01--cancel-and-fill-session-calls-share-the-order-hash-by-design)
 - [pFTMarketplace](#pftmarketplace)
   - [MKT-01 — `acceptBuyOffer`: Put snapshot not bound to the signed offer](#mkt-01--acceptbuyoffer-put-snapshot-not-bound-to-the-signed-offer)
   - [MKT-02 — Stale direct listings after PUT state changes](#mkt-02--stale-direct-listings-after-put-state-changes)
@@ -168,6 +170,26 @@ Recovery of funds depends on a responsive yield claimer.
 **Mitigation:** Maintain a primary **and** a `subYieldClaimer`, operational SLOs /
 monitoring, and governance intervention procedures. Code remains non-reentrant and
 exact-withdrawal hardened.
+
+---
+
+## LeverageRfqEngine
+
+### LEV-01 — Cancel and fill session calls share the order hash by design
+
+**Status:** By design
+
+`LeverageRfqEngine` intentionally uses `_orderStructHash(order)` as the session
+`dataHash` for both `cancelOrderWithSession()` and session-based fill entrypoints. A
+cancel-order hash and an `openLeverage` / fill hash are therefore interchangeable for
+the same order at the contract boundary.
+
+**Bounds / rationale:** The executor is within the trusted boundary and is fixed in the
+signed `SessionCall`; it cannot be substituted after signing. Even outside that trust
+model, the executor can only consume the call once and can only fill the exact order the
+user requested. Nonce, maximum one-day session validity, session limits,
+PositionsManager allowances, health factor, liquidity, and cap checks still apply. This
+is an intentional contract-size tradeoff.
 
 ---
 
