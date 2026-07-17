@@ -13,7 +13,7 @@ platform.
 > - **Mitigated** — partially addressed in code and/or by operational controls; residual risk accepted.
 > - **By design** — intended behavior given current architecture / deployment model.
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-07-16
 
 ---
 
@@ -34,6 +34,8 @@ platform.
   - [YC-01 — Yield claimer must be responsive to recover funds](#yc-01--yield-claimer-must-be-responsive-to-recover-funds)
 - [LeverageRfqEngine](#leveragerfqengine)
   - [LEV-01 — Cancel and fill session calls share the order hash by design](#lev-01--cancel-and-fill-session-calls-share-the-order-hash-by-design)
+- [CircuitBreaker (ftDNMM)](#circuitbreaker-ftdnmm)
+  - [CB-01 — Circuit-breaker capacity can lag same-block TVL changes](#cb-01--circuit-breaker-capacity-can-lag-same-block-tvl-changes)
 - [pFTMarketplace](#pftmarketplace)
   - [MKT-01 — `acceptBuyOffer`: Put snapshot not bound to the signed offer](#mkt-01--acceptbuyoffer-put-snapshot-not-bound-to-the-signed-offer)
   - [MKT-02 — Stale direct listings after PUT state changes](#mkt-02--stale-direct-listings-after-put-state-changes)
@@ -182,12 +184,47 @@ exact-withdrawal hardened.
 cancel-order hash and an `openLeverage` / fill hash are therefore interchangeable for
 the same order at the contract boundary.
 
-**Bounds / rationale:** The executor is within the trusted boundary and is fixed in the
-signed `SessionCall`; it cannot be substituted after signing. Even outside that trust
-model, the executor can only consume the call once and can only fill the exact order the
-user requested. Nonce, maximum one-day session validity, session limits,
-PositionsManager allowances, health factor, liquidity, and cap checks still apply. This
-is an intentional contract-size tradeoff.
+**Bounds / rationale:** Executors are within the trusted boundary and the executor is
+fixed in the signed `SessionCall`; it cannot be substituted after signing. Even outside
+that trust model, a compromised executor could only choose to use the already-authorized
+order hash to fill the exact order the user requested instead of cancelling it. The same
+nonce is consumed on successful execution, sessions are valid for at most one day, and
+session limits, PositionsManager allowances, health factor, liquidity, and cap checks
+still apply. The stale-order variant is accepted as bounded because an open order that
+was fillable and adverse would already be fillable through the intended fill path, and
+otherwise still requires a valid session and the originally fixed executor. Sharing the
+hash is an intentional contract-size tradeoff.
+
+---
+
+## CircuitBreaker (ftDNMM)
+
+### CB-01 — Circuit-breaker capacity can lag same-block TVL changes
+
+**Status:** Acknowledged
+
+Circuit-breaker / rate-limiter capacity is tracked as a buffer that is passively updated
+as a function of elapsed time. When the underlying reference value (e.g. wrapper TVL) is
+reduced within the same block as a protected outflow — for instance by an authorized
+liquidation or bypass path that moves TVL without touching limiter state — the
+state-changing update can compute the new, lower cap but return early because no time has
+elapsed, before it clamps the stored buffer down to that cap. Until a later timestamp
+triggers a normal update, the buffer still reflects the higher pre-decrease reference
+value, so an outflow may consume more capacity than the current value should allow.
+
+A related symptom of the same mechanism: a read-only capacity view that always clamps to
+the current reference value can disagree with the state-changing path within the same
+block, because only the state-changing path takes the zero-elapsed-time early return.
+
+**Class of issue / bounds:** This is a general property of elapsed-time-driven limiter
+accounting rather than a specific route or version. It requires a privileged or authorized
+action to move the reference value within a block; it is not reachable by an arbitrary
+external caller. The discrepancy is transient — bounded to a single block timestamp — and
+self-corrects on the next update at a later timestamp. Limiter implementations that
+recompute and clamp the buffer from the current reference value *before* the
+zero-elapsed-time early return, and integrations that always pass the current pre-outflow
+reference value (including any earlier same-transaction decrease), do not exhibit the
+stale-capacity behavior.
 
 ---
 
