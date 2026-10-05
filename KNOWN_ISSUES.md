@@ -15,7 +15,7 @@ platform.
 > - **Mitigated** — partially addressed in code and/or by operational controls; residual risk accepted.
 > - **By design** — intended behavior given current architecture / deployment model.
 
-**Last updated:** 2026-07-16
+**Last updated:** 2026-10-05
 
 ---
 
@@ -42,6 +42,7 @@ platform.
   - [MKT-01 — `acceptBuyOffer`: Put snapshot not bound to the signed offer](#mkt-01--acceptbuyoffer-put-snapshot-not-bound-to-the-signed-offer)
   - [MKT-02 — Stale direct listings after PUT state changes](#mkt-02--stale-direct-listings-after-put-state-changes)
   - [MKT-03 — Native payout recovery can fail for rejecting contracts](#mkt-03--native-payout-recovery-can-fail-for-rejecting-contracts)
+  - [MKT-04 — Old direct listings can revive after the PUT returns to the seller](#mkt-04--old-direct-listings-can-revive-after-the-put-returns-to-the-seller)
 
 ---
 
@@ -268,3 +269,23 @@ only retries sending ETH to the same `msg.sender`. Contract sellers or fee recip
 that permanently reject ETH can have proceeds stuck.
 
 **Mitigation:** Infrastructure / UI only supports EOA sellers.
+
+---
+
+### MKT-04 — Old direct listings can revive after the PUT returns to the seller
+
+**Status:** Mitigated
+
+A direct listing remains in marketplace storage when its PUT leaves the seller. While
+another address owns the PUT, the listing is not executable. If the same PUT returns to
+the original seller before the listing expires, however, an old listing can become valid
+and executable again without the seller creating a new listing. This can occur when the
+seller's blanket marketplace approval remains active, because that approval survives the
+individual PUT transfer.
+
+**Mitigation / bounds:** Marketplace infrastructure invalidates a listing when it
+observes that the PUT was transferred, and the supported production flow does not open
+listings without a finite expiration. These controls prevent stale transferred listings
+from remaining available through the supported flow, while expiration bounds their
+lifetime. The on-chain listing is not bound to an ownership epoch, so integrations that
+bypass these controls must treat every PUT transfer as invalidating prior listing intent.
